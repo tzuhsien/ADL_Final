@@ -85,7 +85,10 @@ class Agent_Player(Agent):
                 action = 1
             else:
                 action += 8
-        print (action)
+        if action not in self.env.unwrapped._action_set:
+            print('{} is not in action space!'.format(action))
+            action = 0
+        action = np.where(self.env.unwrapped._action_set == action)[0][0]
         self.human_agent_action = action
 
     def key_press(self, key, mod):
@@ -110,6 +113,8 @@ class Agent_Player(Agent):
         self.env.render()
         self.env.unwrapped.viewer.window.on_key_press = self.key_press
         self.env.unwrapped.viewer.window.on_key_release = self.key_release
+        print(env.unwrapped.get_action_meanings())
+        print(self.env.unwrapped._action_set)
         
         self.human_agent_action = 0
         self.human_wants_restart = False
