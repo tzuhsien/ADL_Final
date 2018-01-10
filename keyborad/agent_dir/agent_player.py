@@ -1,5 +1,4 @@
 from agent_dir.agent import Agent
-import tensorflow as tf
 import numpy as np
 import sys
 import os
@@ -7,9 +6,10 @@ import re
 import math
 import random
 import time
+from pickle import dump, load
+from datetime import datetime
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-tf.logging.set_verbosity(tf.logging.ERROR)
 np.set_printoptions(threshold=np.inf)
 
 class Agent_Player(Agent):
@@ -84,7 +84,8 @@ class Agent_Player(Agent):
             if action == 0:
                 action = 1
             else:
-                action += 8 
+                action += 8
+        print (action)
         self.human_agent_action = action
 
     def key_press(self, key, mod):
@@ -103,7 +104,6 @@ class Agent_Player(Agent):
         For example: building your model
         """
         np.random.seed(1)
-        tf.set_random_seed(1)
 
         super(Agent_Player,self).__init__(env)
         
@@ -128,27 +128,9 @@ class Agent_Player(Agent):
         self.learning_rate = 0.0002
         
         self.n_action = env.action_space.n
-        self.n_input = env.observation_space.low.size 
+        self.n_input = env.observation_space.low.size
+        self.memory = []
         
-        self.memory_count = 0
-        self.memory_size = 8000
-        self.memory = np.zeros((self.memory_size, self.n_input*2 + 3))
-        
-        
-        self.sess = tf.Session()
-        
-        
-        
-        if args.test:
-            #you can load your model here
-            print('loading trained model')
-        else:
-            self.sess.run(tf.initialize_all_variables())
-        ##################
-        # YOUR CODE HERE #
-        ##################
-
-
     def init_game_setting(self):
         """
 
@@ -173,7 +155,7 @@ class Agent_Player(Agent):
     def train(self):
     
         obs = self.env.reset()
-        obs = np.reshape(obs, [self.n_input])
+#        obs = np.reshape(obs, [self.n_input])
         
         step = 0
         score = 0
@@ -183,29 +165,32 @@ class Agent_Player(Agent):
            
             action = self.make_action(obs, test=False)
             obs_, reward, done, info = self.env.step(action)
-            obs_ = np.reshape(obs, [self.n_input])
-            self.save_memory(obs, action, reward, done, obs_)
-
+#            obs_ = np.reshape(obs_, [self.n_input])
+#            self.save_memory(obs, action, reward, done, obs_)
+            self.memory.append([obs, action, obs_, reward, done])
             # step forward
-            time.sleep(0.03)
+            time.sleep(0.05)
             obs = obs_
             step += 1
             score += reward
             while self.human_sets_pause:
                 self.env.render()
                 time.sleep(0.1)
-            d = float(done)
-            transition = np.hstack((obs, action, reward, obs_, d))  
-            np.save('./records/record_{}'.format(step), transition)
+            
+#            transition = np.hstack((obs, action, reward, obs_, d))  
             if done:
+                date = datetime.now().strftime("%d-%H-%M")
+                f = open('records/{}'.format(date), 'wb')
+                dump(self.memory, f)
+                f.close()
+                print (step)
+                print (score)
 #               if step < self.memory_size:
 #                   np.save('record_s%5d_r%5d.npy' % (step, score), self.memory[:step])
 #               else:
 #                   np.save('record_s%5d_r%5d.npy' % (step, score), self.memory)
 #   
                 break
-        
-        
     
 
     def make_action(self, observation, test=True):
