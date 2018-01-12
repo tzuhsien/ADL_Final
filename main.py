@@ -39,8 +39,8 @@ def run(args):
         from agent_dir.duel_network import Agent_DQN
         agent = Agent_DQN(env, args)
     elif args.type == 'dqfd':
-        print("Not yet implement!")
-        exit()
+        from agent_dir.dqfd import Agent_DQN
+        agent = Agent_DQN(env, args)
     else:
         print("Unknown type: {}".format(args.type))
         exit()
