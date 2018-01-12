@@ -57,6 +57,11 @@ class Agent_DQN(Agent):
         self.opt = optim.RMSprop(self.Q.parameters(), lr=self.learning_rate)
         self.loss_func = nn.MSELoss()
 
+        self.record_dir = 'dqn_record'
+
+        if not os.path.exists(self.record_dir):
+            os.makedirs(self.record_dir)
+
         if use_cuda:
             self.Q = self.Q.cuda()
             self.Q_target = self.Q_target.cuda()

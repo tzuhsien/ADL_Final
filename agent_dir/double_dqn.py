@@ -57,13 +57,18 @@ class Agent_DQN(Agent):
         self.opt = optim.RMSprop(self.Q.parameters(), lr=self.learning_rate)
         self.loss_func = nn.MSELoss()
 
+        self.record_dir = 'dqn_record'
+
+        if not os.path.exists(self.record_dir):
+            os.makedirs(self.record_dir)
+
         if use_cuda:
             self.Q = self.Q.cuda()
             self.Q_target = self.Q_target.cuda()
             self.loss_func = self.loss_func.cuda()
-        if os.path.isfile('dqn_record/double_DQN.pkl'):
+        if os.path.isfile(os.path.join(self.record_dir, 'double_DQN.pkl')):
             print('loading trained model')
-            self.Q.load_state_dict(torch.load('dqn_record/double_DQN.pkl'))
+            self.Q.load_state_dict(torch.load(os.path.join(self.record_dir, 'double_DQN.pkl')))
             self.Q_target.load_state_dict(self.Q.state_dict())
 
         # initialize
@@ -147,14 +152,14 @@ class Agent_DQN(Agent):
 
                 if self.time % self.update_target_step == 0:
                     self.Q_target.load_state_dict(self.Q.state_dict())
-                    torch.save(self.Q.state_dict(), 'dqn_record/double_DQN.pkl')
+                    torch.save(self.Q.state_dict(), os.path.join(self.record_dir, 'double_DQN.pkl'))
 
                 if self.time % 1000 == 0:
                     print('Now playing %d steps.' % (self.time))
 
             print('Step: %d, Episode: %d, Episode Reward: %f' % (self.time, num_episode, int(self.eps_reward)))
 
-            with open('dqn_record/double_DQN.csv', 'a') as f:
+            with open(os.path.join(self.record_dir, 'double_DQN.csv'), 'a') as f:
                 f.write("%d, %d\n" % (self.time, self.eps_reward))
             
             self.rewards.append(self.eps_reward)
