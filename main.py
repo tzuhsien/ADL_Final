@@ -32,15 +32,12 @@ def run(args):
     if args.type == 'human':
         from agent_dir.agent_player import Agent_Player
         agent = Agent_Player(env, args)
-        agent.train()
     elif args.type == 'double':
         from agent_dir.double_dqn import Agent_DQN
         agent = Agent_DQN(env, args)
-        agent.train()
     elif args.type == 'dueling':
         from agent_dir.duel_network import Agent_DQN
         agent = Agent_DQN(env, args)
-        agent.train()
     elif args.type == 'dqfd':
         print("Not yet implement!")
         exit()
