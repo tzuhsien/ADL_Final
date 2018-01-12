@@ -184,8 +184,9 @@ class Agent_Player(Agent):
             
 #            transition = np.hstack((obs, action, reward, obs_, d))  
             if done:
+                print (done)
                 date = datetime.now().strftime("%d-%H-%M")
-                f = open('records/{}'.format(date), 'wb')
+                f = open('records/{}_{}'.format(date, step), 'wb')
                 dump(self.memory, f)
                 f.close()
                 print (step)
@@ -195,7 +196,7 @@ class Agent_Player(Agent):
 #               else:
 #                   np.save('record_s%5d_r%5d.npy' % (step, score), self.memory)
 #   
-                break
+                return
     
 
     def make_action(self, observation, test=True):
