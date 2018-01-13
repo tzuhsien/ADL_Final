@@ -14,6 +14,7 @@ import random
 import os
 import pickle
 import tqdm
+import datetime
 
 use_cuda = torch.cuda.is_available()
 Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
@@ -43,7 +44,7 @@ class Agent_DQN(Agent):
         self.batch_size = 32
         self.num_actions = env.action_space.n
 
-        self.pretrain_iter = 750000
+        self.pretrain_iter = 350000 #750000
         self.demo_props = 0.3
         self.n_step = 10
         self.n_step_weight = 1
@@ -65,9 +66,9 @@ class Agent_DQN(Agent):
         self.Q = DQN(self.num_actions)
         self.Q_target = DQN(self.num_actions)
         self.opt = optim.RMSprop(self.Q.parameters(), lr=self.learning_rate)
-        self.loss_func = nn.MSELoss()
+        self.loss_func = nn.MSELoss(size_average=False)
 
-        self.record_dir = 'dqn_record'
+        self.record_dir = os.path.join('dqn_record', datetime.datetime.now().strftime("%m-%d_%H-%M"))
 
         if not os.path.exists(self.record_dir):
             os.makedirs(self.record_dir)
@@ -109,7 +110,7 @@ class Agent_DQN(Agent):
         if len(self.buffer) < self.batch_size - demo_samples:
             return
         b_memory = self.buffer.sample(self.batch_size - demo_samples)
-        b_memory = b_demo_memory + b_demo_memory
+        b_memory = b_demo_memory + b_memory
 
         b_s, b_a, b_r, b_s_, b_nd, b_nr, b_ns, b_nns = [], [], [], [], [], [], [], []
         for s, a, s_, r, d, nr, ns in b_memory:
@@ -173,13 +174,15 @@ class Agent_DQN(Agent):
         n_step_loss = self.loss_func(q_eval, q_n_reward)
 
         # supervised loss
-        margins = (torch.ones(self.num_actions, self.num_actions) - torch.eye(self.num_actions)) * self.margin
-        batch_margins = margins[b_a.data.squeeze().cpu()]
-        q_vals += Variable(batch_margins).cuda()
-        supervised_loss = (q_vals.max(1)[0].unsqueeze(1) - q_eval).pow(2)[:demo_samples].sum()
+        supervised_loss = 0
+        if demo_samples:
+            margins = (torch.ones(self.num_actions, self.num_actions) - torch.eye(self.num_actions)) * self.margin
+            batch_margins = margins[b_a.data.squeeze().cpu()]
+            q_vals += Variable(batch_margins).cuda()
+            supervised_loss = (q_vals.max(1)[0].unsqueeze(1) - q_eval)[:demo_samples].sum()
 
         loss = q_loss + self.n_step_weight * n_step_loss + self.supervised_weight * supervised_loss
-        print(loss.data[0])
+        #print('{:10.3f} {:10.3f} {:10.3f} {:10.3f}'.format(loss.data[0], q_loss.data[0], n_step_loss.data[0], supervised_loss.data[0])) 
         self.opt.zero_grad()
         loss.backward()
         self.opt.step()
@@ -239,11 +242,12 @@ class Agent_DQN(Agent):
                 state = next_state
 
                 if self.time % self.update_online_step == 0:
-                    self.optimize_model(self.demo_props)
+                    if len(self.buffer) != self.buffer.capacity:
+                        self.optimize_model(self.demo_props)
 
                 if self.time % self.update_target_step == 0:
                     self.Q_target.load_state_dict(self.Q.state_dict())
-                    torch.save(self.Q.state_dict(), os.path.join(self.record_dir, 'double_DQN.pkl'))
+                    torch.save(self.Q.state_dict(), os.path.join(self.record_dir, 'dqfd_DQN.pkl'))
 
                 if self.time % 1000 == 0:
                     print('Now playing %d steps.' % (self.time))
