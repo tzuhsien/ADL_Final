@@ -43,7 +43,7 @@ class Agent_DQN(Agent):
         self.batch_size = 32
         self.num_actions = env.action_space.n
 
-        self.pretrain_iter = 7500
+        self.pretrain_iter = 750000
         self.demo_props = 0.3
         self.n_step = 10
         self.n_step_weight = 1
@@ -56,7 +56,7 @@ class Agent_DQN(Agent):
 
         # set replay buffer
 
-        self.read_demo_file('/tmp3/lyt/game/1978step')
+        self.read_demo_file(args.demo_file)
         self.buffer = ReplayMemory(self.buffer_size)
 
         # build Q networks
@@ -64,7 +64,7 @@ class Agent_DQN(Agent):
 
         self.Q = DQN(self.num_actions)
         self.Q_target = DQN(self.num_actions)
-        self.opt = optim.RMSprop(self.Q.parameters(), lr=self.learning_rate, weight_decay=1e-5)
+        self.opt = optim.RMSprop(self.Q.parameters(), lr=self.learning_rate)
         self.loss_func = nn.MSELoss()
 
         self.record_dir = 'dqn_record'
@@ -117,7 +117,7 @@ class Agent_DQN(Agent):
             b_a.append(a)
             b_r.append(r)
             b_s_.append(s_)
-            b_nd.append(d)
+            b_nd.append(not d)
 
             b_nr.append(nr)
 
@@ -163,7 +163,7 @@ class Agent_DQN(Agent):
         q_n_next = self.Q_target(b_ns).detach()
         q_n_next.volatile = False
         values, indices = torch.max(self.Q(b_ns), 1)
-        q_n_true = q_next.gather(1, indices.unsqueeze(1))
+        q_n_true = q_n_next.gather(1, indices.unsqueeze(1))
         
         # q_target = b_r + self.gamma * q_next.max(1, keepdim=True)[0] * b_nd
         q_target = b_r + self.gamma * q_true * b_nd
@@ -179,6 +179,7 @@ class Agent_DQN(Agent):
         supervised_loss = (q_vals.max(1)[0].unsqueeze(1) - q_eval).pow(2)[:demo_samples].sum()
 
         loss = q_loss + self.n_step_weight * n_step_loss + self.supervised_weight * supervised_loss
+        print(loss.data[0])
         self.opt.zero_grad()
         loss.backward()
         self.opt.step()
@@ -189,12 +190,24 @@ class Agent_DQN(Agent):
         """
 
         print('start to pretrain')
-        for idx in tqdm.trange(self.pretrain_iter):
+        for idx in range(self.pretrain_iter):
             if idx % self.update_online_step == 0:
                 self.optimize_model(1.0)
 
             if idx % self.update_target_step == 0:
                 self.Q_target.load_state_dict(self.Q.state_dict())
+
+            if idx % 10000 == 10000-1:
+                state = self.env.reset()
+                done = False
+                eps_reward = 0
+                cnt = 10
+                for _ in range(cnt):
+                    while not done:
+                        action = self.make_action(state, test=False)
+                        _, reward, done, _ = self.env.step(action)
+                        eps_reward += reward
+                print('pretraining: {} steps -> {}'.format(idx, eps_reward/cnt))
         print('finish pretraining')
         
         local_buffer = []
@@ -209,7 +222,7 @@ class Agent_DQN(Agent):
                 self.eps_reward += reward
                 self.time += 1
 
-                local_buffer.insert(0, [state, action, next_state, reward, not done, 0, None])
+                local_buffer.insert(0, [state, action, next_state, reward, done, 0, None])
                 new_buffer = []
                 gamma = 1
                 for trans in local_buffer:
@@ -237,7 +250,7 @@ class Agent_DQN(Agent):
 
             print('Step: %d, Episode: %d, Episode Reward: %f' % (self.time, num_episode, int(self.eps_reward)))
 
-            with open(os.path.join(self.record_dir, 'double_DQN.csv'), 'a') as f:
+            with open(os.path.join(self.record_dir, 'dqfd_DQN.csv'), 'a') as f:
                 f.write("%d, %d\n" % (self.time, self.eps_reward))
             
             self.rewards.append(self.eps_reward)

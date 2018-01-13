@@ -12,6 +12,7 @@ from environment import Environment
 def parse():
     parser = argparse.ArgumentParser(description="MLDS&ADL Final Project", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--env_name', default='SeaquestNoFrameskip-v4', help='environment name - SeaquestNoFrameskip-v4, EnduroNoFrameskip-v4, SpaceInvadersNoFrameskip-v4')
+    parser.add_argument('--demo_file', default=None, help='demo file')
     parser.add_argument('--train', action='store_true', help='whether train or not')
     parser.add_argument('--test', action='store_true', help='whether test or not')
     parser.add_argument('--type', default='human', help='human, double, dueling, dqfd')
