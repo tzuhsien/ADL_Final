@@ -1,22 +1,25 @@
-# ADL HW3
-Please don't revise test.py, environment.py, agent_dir/agent.py
+# ADL Final Project
 
-## Installation
-Type the following command to install OpenAI Gym Atari environment.
+DQfD
 
-`$ pip3 install opencv-python gym gym[atari]`
+## Prerequest
+
+### Library
+
+- OpenAI Gym Atari environment
+- Pytorch 0.3
 
 Please refer to [OpenAI's page](https://github.com/openai/gym) if you have any problem while installing.
 
+### Demonstration Data
+
+TODO
+
 ## How to run :
-training policy gradient:
-* `$ python3 main.py --train_pg`
 
-testing policy gradient:
-* `$ python3 test.py --test_pg`
+training dqfd:
+* `$ python main.py --train --type dqfd --demo_file <demo_file> --env_name <env_name>`
 
-training DQN:
-* `$ python3 main.py --train_dqn`
+testing dqfd:
+* `$ python main.py --test --type dqfd --from-model <model_path> --env_name <env_name>`
 
-testing DQN:
-* `$ python3 test.py --test_dqn`
