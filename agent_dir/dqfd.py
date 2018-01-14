@@ -48,7 +48,7 @@ class Agent_DQN(Agent):
         self.pretrain_iter = 350000 #750000
         self.demo_props = 0.3
         self.n_step = 10
-        self.n_step_weight = 1
+        self.n_step_weight = 0
         self.supervised_weight = 1
         self.margin = 0.8
 
@@ -69,7 +69,7 @@ class Agent_DQN(Agent):
         self.opt = optim.RMSprop(self.Q.parameters(), lr=self.learning_rate, weight_decay=1e-5)
         self.loss_func = nn.MSELoss(size_average=False)
 
-        self.record_dir = os.path.join('dqn_record', datetime.datetime.now().strftime("%m-%d_%H-%M"))
+        self.record_dir = os.path.join('dqn_record', '{}_{}'.format(args.env_name, datetime.datetime.now().strftime("%m-%d_%H-%M")))
 
         if not os.path.exists(self.record_dir):
             os.makedirs(self.record_dir)
@@ -183,7 +183,7 @@ class Agent_DQN(Agent):
             supervised_loss = (q_vals.max(1)[0].unsqueeze(1) - q_eval)[:demo_samples].sum()
 
         loss = q_loss + self.n_step_weight * n_step_loss + self.supervised_weight * supervised_loss
-        print('{:10.3f} {:10.3f} {:10.3f} {:10.3f}'.format(loss.data[0], q_loss.data[0], n_step_loss.data[0], supervised_loss.data[0]), file=sys.stderr) 
+        #print('{:10.3f} {:10.3f} {:10.3f} {:10.3f}'.format(loss.data[0], q_loss.data[0], n_step_loss.data[0], supervised_loss.data[0]), file=sys.stderr) 
         self.opt.zero_grad()
         loss.backward()
         self.opt.step()
@@ -255,10 +255,10 @@ class Agent_DQN(Agent):
             for trans in local_buffer:
                 self.buffer.push(trans)
 
-            print('Step: %d, Episode: %d, Episode Reward: %f' % (self.time, num_episode, int(self.eps_reward)))
+            print('Step: %d, Episode: %d, Episode Reward: %f' % (self.time, num_episode, self.eps_reward))
 
             with open(os.path.join(self.record_dir, 'dqfd_DQN.csv'), 'a') as f:
-                f.write("%d, %d\n" % (self.time, self.eps_reward))
+                print("{}, {}".format(self.time, self.eps_reward), file=f)
             
             self.rewards.append(self.eps_reward)
             if num_episode % 100 == 0:
