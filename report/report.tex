@@ -1,0 +1,164 @@
+%
+% Homework Details
+% - Title
+% - Due date
+% - University
+% - Class
+% - Class Alias
+% - Class Section
+% - Instructor
+% - Author
+% - AuthorID
+%
+
+\newcommand{\hmwkID}{1}
+\newcommand{\hmwkTitle}{Final Project Report}
+\newcommand{\hmwkTopic}{Game Playing with DQfD and DQN}
+\newcommand{\hmwkUniversity}{NTU}
+\newcommand{\hmwkClass}{Applied Deep Learning}
+\newcommand{\hmwkClassAlias}{ADL}
+\newcommand{\hmwkClassSection}{Fall 2017}
+\newcommand{\hmwkClassInstructor}{Yun-Nung (Vivian) Chen and Hung-Yi Lee}
+\newcommand{\hmwkTeam}{Praise The Sun}
+\newcommand{\langver}{Trad. Chinese}
+
+
+
+\documentclass{article}
+
+%
+% Packages
+%
+
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{cleveref}
+\usepackage{listings}
+\usepackage{bm}
+\usepackage{float}
+\usepackage{amsthm}
+\usepackage{booktabs}
+
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.7}
+\usepackage{pgf,tikz}
+\usepackage{mathrsfs}
+\usetikzlibrary{arrows}
+\usetikzlibrary[patterns]
+
+\usepackage{xcolor}
+\hypersetup{
+    colorlinks,
+    linkcolor={red!50!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
+
+% additional packages
+\usepackage{lettrine} % large initial
+\usepackage{amsfonts} % mathbb
+
+%
+% Chinese
+%
+
+\usepackage{xeCJK}
+\setCJKmainfont{Noto Sans CJK TC Regular}
+
+\XeTeXlinebreaklocale "zh"
+\XeTeXlinebreakskip = 0pt plus 1pt
+
+%
+% Basic Document Settings
+%
+
+\topmargin=-0.45in
+\evensidemargin=0in
+\oddsidemargin=0in
+\textwidth=6.5in
+\textheight=9.0in
+\headsep=0.25in
+
+\linespread{1.3}
+
+% figure name
+\renewcommand{\figurename}{圖}
+\renewcommand{\tablename}{表}
+
+\pagestyle{fancy}
+%\lhead{\hmwkTeam}
+\lhead{\hmwkClass\ (\hmwkUniversity, \hmwkClassSection)}
+%\chead{}
+\rhead{\hmwkTeam: \hmwkTitle\ (\langver)}
+%\rhead{\hmwkClass\ (\hmwkUniversity, \hmwkClassSection): \hmwkTitle (\langver)}
+\cfoot{\thepage\ of \pageref{LastPage}}
+
+%
+% Title Page
+%
+
+%\title{
+%  % \vspace{2in}
+%  \textmd{\textbf{\hmwkClass:\ \hmwkTitle}}\\
+%  \textmd{\textbf{\hmwkTopic}} \\
+%  \vspace{0.1in}\large{\textit{Instructors \hmwkClassInstructor}}
+%  % \vspace{3in}
+%}
+
+\title{
+   \vspace{-1.5cm}
+  \hmwkClass:\ \hmwkTitle\\
+  \textbf{\hmwkTopic} \\
+  \vspace{0.1in}\large{\textit{Instructors: \hmwkClassInstructor}}
+   %\vspace{-1.5cm}
+}
+
+\author{
+    \textit{Team: \textbf{\hmwkTeam}}
+}
+\date{}
+
+\begin{document}
+
+%\pagenumbering{gobble}
+\maketitle
+\thispagestyle{empty}
+\thispagestyle{fancy}
+% \pagebreak
+\pagenumbering{arabic}
+
+\lettrine[findent=1pt]{\fbox{深}}{ }度強化學習（Deep reinforcement learning）是利用既有的強化學習演算法，結合近年來表現很好的深度學習，所形成的一類機器學習模型，目前在許多領域，例如電腦對局、機器人學、以及機器玩遊戲等，已有很好甚至超越人類的成果。不過，根據先前作業的經驗，傳統的深度強化學習模型在訓練期間頗為耗時，而且就算使用相同環境訓練相同模型，其訓練的成效有時也好壞不一。為了解決這樣的問題，（T. Hester et al., 2017）\cite{DBLP:journals/corr/HesterVPLSPSDOA17} 提出了 DQfD （Deep Q-Learning from Demonstrations）模型，並說明該模型可以僅僅藉由少量的遊戲演示資料來加速模型的訓練。本報告將以數種Atari遊戲作為訓練環境，比較DQfD以及DQN（以及其變形）在這些遊戲中的學習狀態以及成果，並分析導致這些模型結果上差異的因素。
+
+\section{深度強化學習簡介}
+在強化學習中，一個模型裡存有一環境（environment）以及主體（agent），而主體的行為模式可視為一馬可夫決策過程（Markov desicion process，MDP）。MDP可以以一個五元組$(S,A,R(\cdot,\cdot),T(\cdot, \cdot, \cdot),\gamma)$表示。$S$代表著所有狀態（state）的集合；$A$為所有可能行動（action）的集合；$R(s,a)$為一獎勵函數（reward function）（即給定目前狀態$s$以及目前行動$a$，其獎勵為多少）；$T（s,a,s'）=P(s'|s,a)$為一轉換函數（transition function），並服從某一機率分佈；$\gamma$則為折減率（discount factor）。而主體在這個環境中，會根據某個策略函數$\pi(s)$來行動。\par
+在強化學習中，最常見的模型根據主體的性質主要分為基於策略（policy-based）以及基於價值（value-based）的模型：前者主要為直接尋找一個策略函數$\pi$使得其盡量接近最佳策略（即$\pi \rightarrow \pi^*$）；而後者則是給定一個價值函數（$Q^\pi (s,a)$），該函數的目的即是估計出在目前狀態$s$下，若採取某行動$a$所能帶來的預期價值（expected value），而我們會希望該函數可以準確估計出各種狀況下的預期價值（即$Q^\pi (s,a) \rightarrow Q^* (s,a)$），在這情況下，主體的最佳策略即為$\pi^*(s) = \arg \underset{a \in A}\max\ Q^*(s,a)$。\par
+Deep Q-Learning（DQN，直譯為「深度Q學習」）是一種常見的基於價值的深度強化學習模型。它的最佳價值函數可以以下面方程式表示：
+\[Q^*(s,a) = \mathbb{E}\left[R(s,a) + \gamma \sum_{s'}P(s'|s,a) \underset{a'}\max\ Q^*(s',a')\right]\]
+在DQN裡，我們會用一個深度學習網路來代表$Q^\pi$，而我們希望最後$Q^\pi$盡可能的接近$Q^*$。在實務上，我們會用平均平方錯誤（mean squared error, MSE）作為訓練時的誤差函數，且為了穩定訓練，還會固定目標項之參數，如下所示：
+\[\mathcal{L}(w) = \mathbb{E}\left[\left(\underbrace{R(s,a) + \gamma \underset{a'}\max\ Q(s',a', w^-)}_{\text{target, update slowly}} - \underbrace{Q(s,a,w)}_{\text{online, update quickly}}\right)^2\right]\]
+\par
+其他常見的DQN模型還有：Double Q-Learning（DDQN）（H. van Hasselt et al., 2015）\cite{DBLP:journals/corr/HasseltGS15}以及Dueling Network （Z. Wang et al., 2015）\cite{DBLP:journals/corr/WangFL15}等。前者認為，利用目標網路（target network）選取未來預期最大價值的行動，容易有過度估計上的誤差（upward bias）。因此，該模型修正誤差函數成如下：
+\[\mathcal{L}(w) = \mathbb{E}\left[\left(R(s,a) + \gamma Q(s',\underbrace{\arg \underset{a'}\max\ Q(s',a',w)}_{\text{online network chooses optimal } a'}, w^-) - Q(s,a,w)\right)^2\right]\]，而後者則將網路修正成：
+\[Q(s,a,w) = \underbrace{V(s,w)}_{\text{\emph{value}, action-independent}} + \underbrace{A(s,a,w)}_{\text{\emph{advantage}, action-dependent}}\]
+基本概念為：有些狀態天生較好（無論行動為何，預期價值一定比較高），而有些則否，因此預期價值可以視為是目前狀態天生的預期價值（獨立於行動），加上在該狀態下，不同動作下所能提昇/減少的價值。
+
+\section{DQfD：利用演示資料學習}
+DQfD是一種混合了部份監督式學習（supervised learning）要素的強化學習演算法。相較於原始的DQN，DQfD在真正與環境互動訓練之前，會先使用一些事先收集好的演示資料（demonstration data）來進行預訓練（pre-training），之後才真正與環境互動進行強化。以真實的例子來比喻的話，這就有如一名運動員，先接受教練的訓練（專家演示）之後，才到比賽中（環境）累積經驗、強化自己的能力，而非直接在比賽中摸索。
+
+
+\section{實驗設定與結果分析}
+
+\section{結論}
+
+
+
+\renewcommand\refname{參考文獻}
+\bibliographystyle{abbrv}
+\bibliography{report}
+
+\end{document}
+
