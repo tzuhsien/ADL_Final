@@ -14,14 +14,15 @@ if __name__ == '__main__':
             rewards = []
             file = open(line, 'r')
             reward = 0
-            count = 0
+            elems = []
             for r in file:
-                reward += float(r)
-                if count % args.n == args.n - 1:
-                    rewards.append(reward)
-                    reward = 0
-                else:
-                    count += 1
+                r = r.split(',')[1]
+                r = r.strip()
+                r = float(r)
+                elems.insert(0, r)
+                if len(elems) == args.n:
+                    rewards.append(sum(elems)/args.n)
+                    elems.pop()
 
             plt.plot(rewards, label = line)
 
@@ -34,4 +35,4 @@ if __name__ == '__main__':
 
 
 
-    plt.show() 
+    plt.savefig('{}.png'.format(args.title)) 
