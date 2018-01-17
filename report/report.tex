@@ -234,6 +234,26 @@ DQfD中，首先會先預訓練350000次，取樣出演示資料的機率固定�
 
 \section{實驗結果與討論}
 
+圖~\ref{fig:results} 為各模型在不同遊戲上之學習曲線。很明顯的可以看見DQfD之表現未如預期。我們大概分析了導致無法超越DDQN等演算法的可能原因：
+\begin{itemize}
+    \item 相較於原始論文的敘述，我們對記憶體中的資料做抽樣時，並未實作所謂的Priortized Replay Buffer，即未讓演示資料有較高的優先權被抽到，導致了模型比較不會學到專家示範的資料。
+    \item 在預訓練完成時，模型應該就要能夠玩出一點分數，但我們的卻沒有。主要原因是因為實作DQfD時，我們所設定的隨機探索排程與其他模型一樣，從完全隨機遞減到5\%。這樣會導致預訓練的結果可能會被隨機探索洗掉。
+    \item 我們的模型在加了 n-step loss 時結果有些異常，可能有其他實作上的缺陷。
+\end{itemize}
+綜合以上分析，我們這次在實作上稱不上是成功。未來若要在繼續深入探討，可能可以從上述的問題開始下手。
+
+
+\begin{figure}
+
+\includegraphics[scale=0.5]{../poster/figures/Enduro.png}
+\includegraphics[scale=0.5]{../poster/figures/Seaquest.png}\\
+\includegraphics[scale=0.5]{../poster/figures/SpaceInvaders.png}
+
+\caption{各模型之學習曲線。其中Enduro為一賽車遊戲，動作只有左、右、加速三種；而另外兩種比較偏向射擊遊戲，而Seaquest在複雜度上又比SpaceInvaders高。而DQfD之實作是以DDQN為基礎的，即其誤差函數中的$\mathcal{L}_{DQ}(w)$是與DDQN的相同。}
+\label{fig:results}
+\end{figure}
+
+
 
 
 \renewcommand\refname{參考文獻}
