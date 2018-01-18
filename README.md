@@ -17,7 +17,7 @@ Please refer to [OpenAI's page](https://github.com/openai/gym) if you have any p
 
 ### Demonstration Data
 
-linux10.csie.ntu.edu.tw:/tmp2/B03902080/<Enduro, Seaquest, SpaceInvaders>
+- linux10.csie.ntu.edu.tw:/tmp2/B03902080/<Enduro, Seaquest, SpaceInvaders>
 
 ## How to run :
 
@@ -25,5 +25,4 @@ training dqfd:
 * `$ python main.py --train --type dqfd --demo_file <demo_file> --env_name <env_name>`
 
 testing dqfd:
-* `$ python main.py --test --type dqfd --from-model <model_path> --env_name <env_name>`
-
+* `$ python main.py --test --type dqfd --model_path <model_path> --env_name <env_name>`
