@@ -4,8 +4,12 @@ DQfD
 
 ## Prerequest
 
+### System
+- DISTRIB_ID=Ubuntu
+- DISTRIB_RELEASE=16.04
+- DISTRIB_CODENAME=xenial
+- DISTRIB_DESCRIPTION="Ubuntu 16.04.2 LTS"
 ### Library
-
 - OpenAI Gym Atari environment
 - Pytorch 0.3
 
@@ -13,7 +17,7 @@ Please refer to [OpenAI's page](https://github.com/openai/gym) if you have any p
 
 ### Demonstration Data
 
-TODO
+linux10.csie.ntu.edu.tw:/tmp2/B03902080/<Enduro, Seaquest, SpaceInvaders>
 
 ## How to run :
 
