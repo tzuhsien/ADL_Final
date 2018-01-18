@@ -18,6 +18,7 @@ def parse():
     parser.add_argument('--type', default='human', help='human, double, dueling, dqfd')
     parser.add_argument('--video_dir', default=None, help='output video directory')
     parser.add_argument('--do_render', action='store_true', help='whether render environment')
+    parser.add_argument('--model_path', default=None, help='model path')
     try:
         from argument import add_arguments
         parser = add_arguments(parser)
