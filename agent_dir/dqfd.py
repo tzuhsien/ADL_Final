@@ -42,13 +42,13 @@ class Agent_DQN(Agent):
         self.update_target_step = 1000
         self.update_online_step = 4
         self.gamma = 0.99
-        self.batch_size = 32
+        self.batch_size = 64
         self.num_actions = env.action_space.n
 
-        self.pretrain_iter = 350000 #750000
+        self.pretrain_iter = 750000 #750000
         self.demo_props = 0.3
         self.n_step = 10
-        self.n_step_weight = 0
+        self.n_step_weight = 1
         self.supervised_weight = 1
         self.margin = 0.8
 
@@ -57,19 +57,25 @@ class Agent_DQN(Agent):
         self.schedule = ExplorationSchedule()
 
         # set replay buffer
-
-        self.read_demo_file(args.demo_file)
+        if not args.test:
+            self.read_demo_file(args.demo_file)
         self.buffer = ReplayMemory(self.buffer_size)
 
         # build Q networks
-
-
         self.Q = DQN(self.num_actions)
         self.Q_target = DQN(self.num_actions)
         self.opt = optim.RMSprop(self.Q.parameters(), lr=self.learning_rate, weight_decay=1e-5)
         self.loss_func = nn.MSELoss(size_average=False)
-
+        
         self.record_dir = os.path.join('dqn_record', '{}_{}'.format(args.env_name, datetime.datetime.now().strftime("%m-%d_%H-%M")))
+        
+        if args.test:
+            print('loading trained model')
+            self.Q.load_state_dict(torch.load(os.path.join(args.model_path)))
+            self.Q_target.load_state_dict(self.Q.state_dict())
+        
+            self.record_dir = os.path.join('dqn_record', '{}_{}_test'.format(args.env_name, datetime.datetime.now().strftime("%m-%d_%H-%M")))
+ 
 
         if not os.path.exists(self.record_dir):
             os.makedirs(self.record_dir)
@@ -78,11 +84,6 @@ class Agent_DQN(Agent):
             self.Q = self.Q.cuda()
             self.Q_target = self.Q_target.cuda()
             self.loss_func = self.loss_func.cuda()
-        if os.path.isfile(os.path.join(self.record_dir, 'dqfd_DQN.pkl')):
-            print('loading trained model')
-            self.Q.load_state_dict(torch.load(os.path.join(self.record_dir, 'dqfd_DQN.pkl')))
-            self.Q_target.load_state_dict(self.Q.state_dict())
-
         # initialize
 
         self.time = 0
@@ -242,8 +243,9 @@ class Agent_DQN(Agent):
                 state = next_state
 
                 if self.time % self.update_online_step == 0:
+                    eps = self.schedule.value(self.time)
                     if len(self.buffer) == self.buffer.capacity:
-                        self.optimize_model(self.demo_props)
+                        self.optimize_model(1 - eps)
 
                 if self.time % self.update_target_step == 0:
                     self.Q_target.load_state_dict(self.Q.state_dict())
@@ -267,7 +269,7 @@ class Agent_DQN(Agent):
                 print('---')
                 self.rewards = []
 
-            if self.time >= 3000000:
+            if self.time >= 7000000:
                 break
             
 
@@ -290,8 +292,7 @@ class Agent_DQN(Agent):
 
         if not test:
             rd = random.random()
-            eps = self.schedule.value(self.time)
-            if rd < eps:
+            if rd < 0.95:
                 return self.Q(obs).data.max(1)[1][0]
             else:
                 return self.env.get_random_action()
@@ -362,7 +363,7 @@ class DQN(nn.Module):
         return fc_out
 
 class ExplorationSchedule(object):
-    def __init__(self, timestep=1e6, final=0.95, initial=0):
+    def __init__(self, timestep=1e6, final=0.95, initial=0.5):
         self.timestep = timestep
         self.final = final
         self.initial = initial
